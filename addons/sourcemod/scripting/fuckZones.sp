@@ -463,6 +463,11 @@ public Action OnClientSayCommand(int client, const char[] command, const char[] 
 			CZone[client].SetName = false;
 			OpenCreateZonesMenu(client);
 		}
+		else if (CZone[client].SetPrecision)
+		{
+			CZone[client].SetPrecision = false;
+			OpenCreateZonesMenu(client);
+		}
 		else if (g_iEditingName[client] != INVALID_ENT_REFERENCE)
 		{
 			int entity = EntRefToEntIndex(g_iEditingName[client]);
@@ -482,6 +487,30 @@ public Action OnClientSayCommand(int client, const char[] command, const char[] 
 		
 		strcopy(CZone[client].Name, MAX_ZONE_NAME_LENGTH, sArgs);
 		CZone[client].SetName = false;
+		OpenCreateZonesMenu(client);
+
+		return Plugin_Stop;
+	}
+
+	if (CZone[client].SetPrecision)
+	{
+		for (int i = 0; i < strlen(sArgs); i++)
+		{
+			if (!IsCharNumeric(sArgs[i]))
+			{
+				CPrintToChat(client, "%T", "Command - Only Numbers", client);
+				return Plugin_Stop;
+			}
+		}
+
+		g_fPrecision[client] = StringToFloat(sArgs);
+
+		char sBuffer[12];
+		FloatToString(g_fPrecision[client], sBuffer, sizeof(sBuffer));
+
+		CPrintToChat(client, "%T", "Command - Precision Set", client, g_fPrecision[client]);
+
+		CZone[client].SetPrecision = false;
 		OpenCreateZonesMenu(client);
 
 		return Plugin_Stop;
@@ -836,14 +865,6 @@ void OnButtonPress(int client, int button)
 		}
 	}
 }
-
-/* void OnButtonRelease(int client, int button)
-{
-	if (client && button)
-	{
-		// Hello.
-	}
-} */
 
 public Action Timer_ResetShow(Handle timer, int userid)
 {
@@ -1545,6 +1566,11 @@ public int MenuHandler_ZonePropertiesMenu(Menu menu, MenuAction action, int para
 				CPrintToChat(param1, "%T", "Chat - Teleport Point Set", param1);
 
 				OpenZonePropertiesMenu(param1, entity);
+			}
+			else if (StrEqual(sInfo, "set precision"))
+			{
+				CZone[param1].SetPrecision = true;
+				CPrintToChat(param1, "%T", "Chat - New Zone Precision", param1);
 			}
 			else
 			{
@@ -2508,6 +2534,11 @@ public int MenuHandler_CreateZonesMenu(Menu menu, MenuAction action, int param1,
 
 				OpenCreateZonesMenu(param1);
 			}
+			else if (StrEqual(sInfo, "set precision"))
+			{
+				CZone[param1].SetPrecision = true;
+				CPrintToChat(param1, "%T", "Chat - New Zone Precision", param1);
+			}
 			else if (StrEqual(sInfo, "color"))
 			{
 				OpenZonesColorMenu(param1);
@@ -2809,6 +2840,7 @@ void ResetCreateZoneVariables(int client)
 	delete CZone[client].PointsData;
 	CZone[client].PointsHeight = g_cDefaultHeight.FloatValue;
 	CZone[client].SetName = false;
+	CZone[client].SetPrecision = false;
 	CZone[client].Display = g_cDefaultDisplay.IntValue;
 	CZone[client].Show = true;
 	CZone[client].Trigger = -1;
@@ -4704,6 +4736,8 @@ void AddZoneMenuItems(int client, Menu menu, bool create, int type, int pointsLe
 	GetDisplayNameByType(display, sType, sizeof(sType));
 	AddItemFormat(menu, "display", _, "%T", "Menu - Item - Display", client, sType, sBuffer);
 
+	AddItemFormat(menu, "set precision", _, "%T", "Menu - Item - set precision", client);
+
 	if (type == ZONE_TYPE_TRIGGER && create)
 	{
 		return;
@@ -4735,7 +4769,7 @@ void AddZoneMenuItems(int client, Menu menu, bool create, int type, int pointsLe
 		{
 			AddItemFormat(menu, "add_point", _, "%T", "Menu - Item - Add a Point", client);
 			AddItemFormat(menu, "add_point_floor", _, "%T", "Menu - Item - Add a FloorPoint", client);
-			
+
 			if (!create)
 			{
 				AddItemFormat(menu, "edit_point", (pointsLength > 0) ? ITEMDRAW_DEFAULT : ITEMDRAW_DISABLED, "%T", "Menu - Item - Edit a Point", client);
