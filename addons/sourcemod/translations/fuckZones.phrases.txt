@@ -38,6 +38,11 @@
 		"chi"		"区域{green}{1}{default}已成功更改为{green}{2}{default}。"
 	}
 
+	"Chat - New Zone Precision"
+	{
+		"en"		"Create a new zone precision (default 10)."
+	}
+
 	"Command - Teleport Usage"
 	{
 		"#format"	"{1:s}"
@@ -48,7 +53,7 @@
 		"chi"		"用法：{1} <#userid|name> <zone>"
 	}
 
-	"Command - Effects Reloaded"
+	"Command - Effect Reloaded"
 	{
 		"en"		"Effects data has been reloaded."
 		"de"		"Die Effektdaten wurden neu geladen."
@@ -191,6 +196,11 @@
 		"pl"		"Brak efektów"
 		"fr"		"Aucun effet"
 		"chi"		"没有效果"
+	}
+
+	"Menu - Item - set precision"
+	{
+		"en"		"Set Precision"
 	}
 
 	"Command - Active Regenerate Spam Protection"
