@@ -119,6 +119,7 @@ bool g_bSelectedZone[MAX_ENTITY_LIMIT] = { false, ... };
 int g_iConfirmZone[MAXPLAYERS + 1] = { -1, ... };
 int g_iConfirmPoint[MAXPLAYERS + 1] = { -1, ... };
 int g_iLastButtons[MAXPLAYERS+1] = { 0, ... };
+bool g_bFloor[MAXPLAYERS + 1];
 
 Handle g_coPrecision = null;
 float g_fPrecision[MAXPLAYERS + 1] = { 0.0, ... };
@@ -143,7 +144,6 @@ public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max
 	CreateNative("fuckZones_RegisterEffect", Native_RegisterEffect);
 	CreateNative("fuckZones_RegisterEffectKey", Native_RegisterEffectKey);
 	CreateNative("fuckZones_ReloadEffects", Native_ReloadEffects);
-	CreateNative("fuckZones_RegenerateZones", Native_RegenerateZones);
 	CreateNative("fuckZones_IsClientInZone", Native_IsClientInZone);
 	CreateNative("fuckZones_IsClientInZoneIndex", Native_IsClientInZoneIndex);
 	CreateNative("fuckZones_TeleportClientToZone", Native_TeleportClientToZone);
@@ -198,11 +198,8 @@ public void OnPluginStart()
 	HookEventEx("round_start", Event_RoundStart);
 	HookEventEx("round_end", Event_RoundEnd);
 
-	RegAdminCmd("sm_zone", Command_EditZoneMenu, ADMFLAG_ROOT, "Edit a certain zone that you're standing in.");
 	RegAdminCmd("sm_editzone", Command_EditZoneMenu, ADMFLAG_ROOT, "Edit a certain zone that you're standing in.");
-	RegAdminCmd("sm_editzonemenu", Command_EditZoneMenu, ADMFLAG_ROOT, "Edit a certain zone that you're standing in.");
-	RegAdminCmd("sm_zones", Command_OpenZonesMenu, ADMFLAG_ROOT, "Display the zones manager menu.");
-	RegAdminCmd("sm_zonesmenu", Command_OpenZonesMenu, ADMFLAG_ROOT, "Display the zones manager menu.");
+	RegAdminCmd("sm_fuckzones", Command_OpenZonesMenu, ADMFLAG_ROOT, "Display the zones manager menu.");
 	RegAdminCmd("sm_teleporttozone", Command_TeleportToZone, ADMFLAG_ROOT, "Teleport to a specific zone by name or by menu.");
 	RegAdminCmd("sm_regeneratezones", Command_RegenerateZones, ADMFLAG_ROOT, "Regenerate all zones on the map.");
 	RegAdminCmd("sm_deleteallzones", Command_DeleteAllZones, ADMFLAG_ROOT, "Delete all zones on the map.");
@@ -261,6 +258,8 @@ public void OnMapStart()
 
 	delete g_aMapZones;
 	g_aMapZones = new ArrayList();
+
+	SpawnAllZones();
 }
 
 public void OnMapEnd()
@@ -429,7 +428,7 @@ public void Event_RoundStart(Event event, const char[] name, bool dontBroadcast)
 
 public void Event_RoundEnd(Event event, const char[] name, bool dontBroadcast)
 {
-	ClearAllZones();
+	g_aMapZones.Clear();
 
 	for (int i = 1; i <= MaxClients; i++)
 	{
@@ -448,17 +447,17 @@ void ClearAllZones()
 
 		if (IsValidEntity(zone))
 		{
-			StringMapSnapshot snap = Zone[zone].Effects.Snapshot();
+			StringMapSnapshot snap1 = Zone[zone].Effects.Snapshot();
 			char sKey[128];
-			for (int j = 0; j < snap.Length; j++)
+			for (int j = 0; j < snap1.Length; j++)
 			{
-				snap.GetKey(j, sKey, sizeof(sKey));
+				snap1.GetKey(j, sKey, sizeof(sKey));
 
 				StringMap temp = null;
 				Zone[zone].Effects.GetValue(sKey, temp);
 				delete temp;
 			}
-			delete snap;
+			delete snap1;
 			delete Zone[zone].Effects;
 			delete Zone[zone].PointsData;
 
@@ -752,6 +751,10 @@ public Action OnPlayerRunCmd(int client, int &buttons, int &impulse, float vel[3
 			GetClientLookPoint(client, fPoint);
 			fPoint[2] += g_cDefaultZOffset.FloatValue;
 
+			float vPlayerOrigin[3];
+			GetClientAbsOrigin(client, vPlayerOrigin);
+			vPlayerOrigin[2] += g_cDefaultZOffset.FloatValue;
+
 			switch (CZone[client].Type)
 			{
 				case ZONE_TYPE_CIRCLE:
@@ -863,25 +866,50 @@ public Action OnPlayerRunCmd(int client, int &buttons, int &impulse, float vel[3
 						iColor[2] = 0;
 						iColor[3] = 255;
 
-						TE_SetupBeamPointsToClient(client, fLast, fPoint, g_iDefaultModelIndex, g_iDefaultHaloIndex, TE_STARTFRAME, TE_FRAMERATE, TE_LIFE_CREATE, TE_WIDTH, TE_ENDWIDTH, TE_FADELENGTH, TE_AMPLITUDE, iColor, TE_SPEED);
-						TE_SetupBeamPointsToClient(client, fStart, fPoint, g_iDefaultModelIndex, g_iDefaultHaloIndex, TE_STARTFRAME, TE_FRAMERATE, TE_LIFE_CREATE, TE_WIDTH, TE_ENDWIDTH, TE_FADELENGTH, TE_AMPLITUDE, iColor, TE_SPEED);
+						if(g_bFloor[client])//rosekick mark
+						{
+							TE_SetupBeamPointsToClient(client, fLast, vPlayerOrigin, g_iDefaultModelIndex, g_iDefaultHaloIndex, TE_STARTFRAME, TE_FRAMERATE, TE_LIFE_CREATE, TE_WIDTH, TE_ENDWIDTH, TE_FADELENGTH, TE_AMPLITUDE, iColor, TE_SPEED);
+							TE_SetupBeamPointsToClient(client, fStart, vPlayerOrigin, g_iDefaultModelIndex, g_iDefaultHaloIndex, TE_STARTFRAME, TE_FRAMERATE, TE_LIFE_CREATE, TE_WIDTH, TE_ENDWIDTH, TE_FADELENGTH, TE_AMPLITUDE, iColor, TE_SPEED);
 
-						float fUpperLast[3];
-						fUpperLast = fLast;
-						fUpperLast[2] += CZone[client].PointsHeight;
+							float fUpperLast[3];
+							fUpperLast = fLast;
+							fUpperLast[2] += CZone[client].PointsHeight;
 
-						float fUpperPoint[3];
-						fUpperPoint = fPoint;
-						fUpperPoint[2] += CZone[client].PointsHeight;
+							float fUpperPoint[3];
+							fUpperPoint = vPlayerOrigin;
+							fUpperPoint[2] += CZone[client].PointsHeight;
 
-						float fUpperStart[3];
-						fUpperStart = fStart;
-						fUpperStart[2] += CZone[client].PointsHeight;
+							float fUpperStart[3];
+							fUpperStart = fStart;
+							fUpperStart[2] += CZone[client].PointsHeight;
 
-						TE_SetupBeamPointsToClient(client, fUpperLast, fUpperPoint, g_iDefaultModelIndex, g_iDefaultHaloIndex, TE_STARTFRAME, TE_FRAMERATE, TE_LIFE_CREATE, TE_WIDTH, TE_ENDWIDTH, TE_FADELENGTH, TE_AMPLITUDE, iColor, TE_SPEED);
-						TE_SetupBeamPointsToClient(client, fUpperStart, fUpperPoint, g_iDefaultModelIndex, g_iDefaultHaloIndex, TE_STARTFRAME, TE_FRAMERATE, TE_LIFE_CREATE, TE_WIDTH, TE_ENDWIDTH, TE_FADELENGTH, TE_AMPLITUDE, iColor, TE_SPEED);
-						
-						TE_SetupBeamPointsToClient(client, fUpperPoint, fPoint, g_iDefaultModelIndex, g_iDefaultHaloIndex, TE_STARTFRAME, TE_FRAMERATE, TE_LIFE_CREATE, TE_WIDTH, TE_ENDWIDTH, TE_FADELENGTH, TE_AMPLITUDE, iColor, TE_SPEED);
+							TE_SetupBeamPointsToClient(client, fUpperLast, fUpperPoint, g_iDefaultModelIndex, g_iDefaultHaloIndex, TE_STARTFRAME, TE_FRAMERATE, TE_LIFE_CREATE, TE_WIDTH, TE_ENDWIDTH, TE_FADELENGTH, TE_AMPLITUDE, iColor, TE_SPEED);
+							TE_SetupBeamPointsToClient(client, fUpperStart, fUpperPoint, g_iDefaultModelIndex, g_iDefaultHaloIndex, TE_STARTFRAME, TE_FRAMERATE, TE_LIFE_CREATE, TE_WIDTH, TE_ENDWIDTH, TE_FADELENGTH, TE_AMPLITUDE, iColor, TE_SPEED);
+							
+							TE_SetupBeamPointsToClient(client, fUpperPoint, vPlayerOrigin, g_iDefaultModelIndex, g_iDefaultHaloIndex, TE_STARTFRAME, TE_FRAMERATE, TE_LIFE_CREATE, TE_WIDTH, TE_ENDWIDTH, TE_FADELENGTH, TE_AMPLITUDE, iColor, TE_SPEED);
+						}
+						else
+						{
+							TE_SetupBeamPointsToClient(client, fLast, fPoint, g_iDefaultModelIndex, g_iDefaultHaloIndex, TE_STARTFRAME, TE_FRAMERATE, TE_LIFE_CREATE, TE_WIDTH, TE_ENDWIDTH, TE_FADELENGTH, TE_AMPLITUDE, iColor, TE_SPEED);
+							TE_SetupBeamPointsToClient(client, fStart, fPoint, g_iDefaultModelIndex, g_iDefaultHaloIndex, TE_STARTFRAME, TE_FRAMERATE, TE_LIFE_CREATE, TE_WIDTH, TE_ENDWIDTH, TE_FADELENGTH, TE_AMPLITUDE, iColor, TE_SPEED);
+
+							float fUpperLast[3];
+							fUpperLast = fLast;
+							fUpperLast[2] += CZone[client].PointsHeight;
+
+							float fUpperPoint[3];
+							fUpperPoint = fPoint;
+							fUpperPoint[2] += CZone[client].PointsHeight;
+
+							float fUpperStart[3];
+							fUpperStart = fStart;
+							fUpperStart[2] += CZone[client].PointsHeight;
+
+							TE_SetupBeamPointsToClient(client, fUpperLast, fUpperPoint, g_iDefaultModelIndex, g_iDefaultHaloIndex, TE_STARTFRAME, TE_FRAMERATE, TE_LIFE_CREATE, TE_WIDTH, TE_ENDWIDTH, TE_FADELENGTH, TE_AMPLITUDE, iColor, TE_SPEED);
+							TE_SetupBeamPointsToClient(client, fUpperStart, fUpperPoint, g_iDefaultModelIndex, g_iDefaultHaloIndex, TE_STARTFRAME, TE_FRAMERATE, TE_LIFE_CREATE, TE_WIDTH, TE_ENDWIDTH, TE_FADELENGTH, TE_AMPLITUDE, iColor, TE_SPEED);
+							
+							TE_SetupBeamPointsToClient(client, fUpperPoint, fPoint, g_iDefaultModelIndex, g_iDefaultHaloIndex, TE_STARTFRAME, TE_FRAMERATE, TE_LIFE_CREATE, TE_WIDTH, TE_ENDWIDTH, TE_FADELENGTH, TE_AMPLITUDE, iColor, TE_SPEED);
+						}
 					}
 				}
 			}
@@ -1615,6 +1643,18 @@ public int MenuHandler_ZonePropertiesMenu(Menu menu, MenuAction action, int para
 				vLookPoint[2] += g_cDefaultZOffset.FloatValue;
 
 				Zone[entity].PointsData.PushArray(vLookPoint, 3);
+
+				SaveZonePointsData(entity);
+
+				OpenZonePropertiesMenu(param1, entity);
+			}
+			else if (StrEqual(sInfo, "add_point_floor"))
+			{
+				float vPlayerOrigin[3];
+				GetClientAbsOrigin(param1, vPlayerOrigin);
+				vPlayerOrigin[2] += g_cDefaultZOffset.FloatValue;
+
+				Zone[entity].PointsData.PushArray(vPlayerOrigin, 3);
 
 				SaveZonePointsData(entity);
 
@@ -2580,6 +2620,18 @@ public int MenuHandler_CreateZonesMenu(Menu menu, MenuAction action, int param1,
 
 				CZone[param1].PointsData.PushArray(vLookPoint, 3);
 
+				g_bFloor[param1] = false;
+				OpenCreateZonesMenu(param1);
+			}
+			else if (StrEqual(sInfo, "add_point_floor"))
+			{
+				float vPlayerOrigin[3];
+				GetClientAbsOrigin(param1, vPlayerOrigin);
+				vPlayerOrigin[2] += g_cDefaultZOffset.FloatValue;
+
+				CZone[param1].PointsData.PushArray(vPlayerOrigin, 3);
+
+				g_bFloor[param1] = true;
 				OpenCreateZonesMenu(param1);
 			}
 			else if (StrEqual(sInfo, "remove_point"))
@@ -2602,7 +2654,6 @@ public int MenuHandler_CreateZonesMenu(Menu menu, MenuAction action, int param1,
 			else if (StrEqual(sInfo, "set_teleport"))
 			{
 				GetClientAbsOrigin(param1, CZone[param1].Teleport);
-
 				CPrintToChat(param1, "%T", "Chat - Teleport Point Set", param1);
 
 				OpenCreateZonesMenu(param1);
@@ -2631,6 +2682,7 @@ public int MenuHandler_CreateZonesMenu(Menu menu, MenuAction action, int param1,
 
 		case MenuAction_Cancel:
 		{
+			g_bFloor[param1] = false;
 			ResetCreateZoneVariables(param1);
 
 			if (param2 == MenuCancel_ExitBack)
@@ -3280,8 +3332,6 @@ void CreateNewZone(int client)
 	GetDisplayNameByType(CZone[client].Display, sType, sizeof(sType));
 	g_kvConfig.SetString("display", sType);
 
-	g_kvConfig.SetVector("teleport", CZone[client].Teleport);
-
 	switch (CZone[client].Type)
 	{
 		case ZONE_TYPE_BOX:
@@ -3311,6 +3361,7 @@ void CreateNewZone(int client)
 
 		case ZONE_TYPE_POLY:
 		{
+			g_kvConfig.SetVector("teleport", CZone[client].Teleport);
 			g_kvConfig.SetFloat("points_height", CZone[client].PointsHeight);
 
 			if (g_kvConfig.JumpToKey("points", true))
@@ -3857,7 +3908,7 @@ int CreateZone(eCreateZone Data, bool create)
 
 				if (Data.PointsData != null)
 				{
-					Zone[entity].PointsData = Data.PointsData;
+					Zone[entity].PointsData = view_as<ArrayList>(CloneHandle(Data.PointsData));
 				}
 				else
 				{
@@ -3901,6 +3952,8 @@ int CreateZone(eCreateZone Data, bool create)
 				}
 
 				Zone[entity].PointsDistance = greatdiff;
+
+				Zone[entity].Teleport = Data.Teleport;
 			}
 		}
 	}
@@ -3914,7 +3967,6 @@ int CreateZone(eCreateZone Data, bool create)
 		Zone[entity].Radius = Data.Radius;
 		Zone[entity].PointsHeight = Data.PointsHeight;
 		Zone[entity].Display = Data.Display;
-		Zone[entity].Teleport = Data.Teleport;
 		
 		if (Data.Type == ZONE_TYPE_TRIGGER)
 		{
@@ -3923,24 +3975,24 @@ int CreateZone(eCreateZone Data, bool create)
 
 		if (Zone[entity].Effects != null)
 		{
-			StringMapSnapshot snap = Zone[entity].Effects.Snapshot();
+			StringMapSnapshot snap1 = Zone[entity].Effects.Snapshot();
 			char sKey[128];
-			for (int j = 0; j < snap.Length; j++)
+			for (int j = 0; j < snap1.Length; j++)
 			{
-				snap.GetKey(j, sKey, sizeof(sKey));
+				snap1.GetKey(j, sKey, sizeof(sKey));
 
 				StringMap temp = null;
 				Zone[entity].Effects.GetValue(sKey, temp);
 				delete temp;
 			}
-			delete snap;
+			delete snap1;
 		}
 
 		delete Zone[entity].Effects;
 
 		if (Data.Effects != null)
 		{
-			Zone[entity].Effects = Data.Effects;
+			Zone[entity].Effects = view_as<StringMap>(CloneHandle(Data.Effects));
 		}
 		else
 		{
@@ -3960,6 +4012,9 @@ int CreateZone(eCreateZone Data, bool create)
 	Call_PushString(Data.Name);
 	Call_PushCell(Data.Type);
 	Call_Finish();
+
+	delete Data.PointsData;
+	delete Data.Effects;
 	
 	return entity;
 }
@@ -4613,30 +4668,23 @@ bool TeleportToZone(int client, const char[] zone)
 	float fMiddle[3];
 	switch (GetZoneTypeByIndex(entity))
 	{
-		case ZONE_TYPE_BOX,ZONE_TYPE_TRIGGER:
+		case ZONE_TYPE_BOX:
 		{
-			if (fuckZones_IsPositionNull(Zone[entity].Teleport))
-			{
-				float fStart[3], fEnd[3];
-				GetAbsBoundingBox(entity, fStart, fEnd);
-				GetMiddleOfABox(fStart, fEnd, fMiddle);
-			}
-			else
-			{
-				fMiddle = Zone[entity].Teleport;
-			}
+			float fStart[3], fEnd[3];
+			GetAbsBoundingBox(entity, fStart, fEnd);
+			GetMiddleOfABox(fStart, fEnd, fMiddle);
+		}
+
+		case ZONE_TYPE_TRIGGER:
+		{
+			float fStart[3], fEnd[3];
+			GetAbsBoundingBox(entity, fStart, fEnd);
+			GetMiddleOfABox(fStart, fEnd, fMiddle);
 		}
 
 		case ZONE_TYPE_CIRCLE:
 		{
-			if (fuckZones_IsPositionNull(Zone[entity].Teleport))
-			{
-				fMiddle = Zone[entity].Start;
-			}
-			else
-			{
-				fMiddle = Zone[entity].Teleport;
-			}
+			fMiddle = Zone[entity].Start;
 		}
 
 		case ZONE_TYPE_POLY:
@@ -5048,11 +5096,6 @@ public int Native_RegisterEffectKey(Handle plugin, int numParams)
 public int Native_ReloadEffects(Handle plugin, int numParams)
 {
 	QueueEffects();
-}
-
-public int Native_RegenerateZones(Handle plugin, int numParams)
-{
-	RegenerateZones();
 }
 
 public int Native_IsClientInZone(Handle plugin, int numParams)
@@ -5522,7 +5565,6 @@ void AddZoneMenuItems(int client, Menu menu, bool create, int type, int pointsLe
 			AddItemFormat(menu, "startpoint_b", _, "%T", "Menu - Item - Set Ending Point", client);
 			AddItemFormat(menu, "startpoint_b_no_z", fuckZones_IsPositionNull(end) ? ITEMDRAW_DISABLED : ITEMDRAW_DEFAULT, "%T", "Menu - Item - Set Ending Point (Ignore Z/Height)", client);
 			AddItemFormat(menu, "startpoint_b_precision", fuckZones_IsPositionNull(end) ? ITEMDRAW_DISABLED : ITEMDRAW_DEFAULT, "%T", "Menu - Item - Edit Ending Point (Precision)", client);
-			AddItemFormat(menu, "set_teleport", (fuckZones_IsPositionNull(start) || fuckZones_IsPositionNull(end)) ? ITEMDRAW_DISABLED : ITEMDRAW_DEFAULT, "%T", "Menu - Item - Set Teleport Point", client);
 		}
 
 		case ZONE_TYPE_CIRCLE:
@@ -5533,12 +5575,12 @@ void AddZoneMenuItems(int client, Menu menu, bool create, int type, int pointsLe
 			AddItemFormat(menu, "remove_radius", _, "%T", "Menu - Item - Radius -", client);
 			AddItemFormat(menu, "add_height", _, "%T", "Menu - Item - Height +", client);
 			AddItemFormat(menu, "remove_height", _, "%T", "Menu - Item - Height -", client);
-			AddItemFormat(menu, "set_teleport", fuckZones_IsPositionNull(start) ? ITEMDRAW_DISABLED : ITEMDRAW_DEFAULT, "%T", "Menu - Item - Set Teleport Point", client);
 		}
 
 		case ZONE_TYPE_POLY:
 		{
 			AddItemFormat(menu, "add_point", _, "%T", "Menu - Item - Add a Point", client);
+			AddItemFormat(menu, "add_point_floor", _, "%T", "Menu - Item - Add a FloorPoint", client);
 			
 			if (!create)
 			{
