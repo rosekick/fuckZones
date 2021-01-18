@@ -3417,10 +3417,10 @@ void GetZoneNameByType(int type, char[] buffer, int size)
 	switch (type)
 	{
 		case ZONE_TYPE_NONE: strcopy(buffer, size, "N/A");
-		case ZONE_TYPE_BOX: strcopy(buffer, size, "Box");
-		case ZONE_TYPE_CIRCLE: strcopy(buffer, size, "Circle");
-		case ZONE_TYPE_POLY: strcopy(buffer, size, "Polygon");
-		case ZONE_TYPE_TRIGGER: strcopy(buffer, size, "Trigger");
+		case ZONE_TYPE_BOX: strcopy(buffer, size, "矩形");
+		case ZONE_TYPE_CIRCLE: strcopy(buffer, size, "圆形");
+		case ZONE_TYPE_POLY: strcopy(buffer, size, "多边形");
+		case ZONE_TYPE_TRIGGER: strcopy(buffer, size, "触发器");
 	}
 }
 
@@ -3450,19 +3450,19 @@ int GetZoneTypeByIndex(int entity)
 
 int GetZoneTypeByName(const char[] sType)
 {
-	if (StrEqual(sType, "Box"))
+	if (StrEqual(sType, "矩形"))
 	{
 		return ZONE_TYPE_BOX;
 	}
-	else if (StrEqual(sType, "Circle"))
+	else if (StrEqual(sType, "圆形"))
 	{
 		return ZONE_TYPE_CIRCLE;
 	}
-	else if (StrEqual(sType, "Polygon"))
+	else if (StrEqual(sType, "多边形"))
 	{
 		return ZONE_TYPE_POLY;
 	}
-	else if (StrEqual(sType, "Trigger"))
+	else if (StrEqual(sType, "触发器"))
 	{
 		return ZONE_TYPE_TRIGGER;
 	}
@@ -3474,23 +3474,23 @@ void GetDisplayNameByType(int type, char[] buffer, int size)
 {
 	switch (type)
 	{
-		case DISPLAY_TYPE_HIDE: strcopy(buffer, size, "Hide");
-		case DISPLAY_TYPE_BOTTOM: strcopy(buffer, size, "Bottom");
-		case DISPLAY_TYPE_FULL: strcopy(buffer, size, "Full");
+		case DISPLAY_TYPE_HIDE: strcopy(buffer, size, "隐藏");
+		case DISPLAY_TYPE_BOTTOM: strcopy(buffer, size, "仅底部");
+		case DISPLAY_TYPE_FULL: strcopy(buffer, size, "完全");
 	}
 }
 
 int GetDisplayTypeByName(const char[] sType)
 {
-	if (StrEqual(sType, "Hide"))
+	if (StrEqual(sType, "隐藏"))
 	{
 		return DISPLAY_TYPE_HIDE;
 	}
-	else if (StrEqual(sType, "Bottom"))
+	else if (StrEqual(sType, "仅底部"))
 	{
 		return DISPLAY_TYPE_BOTTOM;
 	}
-	else if (StrEqual(sType, "Full"))
+	else if (StrEqual(sType, "完全"))
 	{
 		return DISPLAY_TYPE_FULL;
 	}

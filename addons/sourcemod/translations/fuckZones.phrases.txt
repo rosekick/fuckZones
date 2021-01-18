@@ -713,6 +713,15 @@
 		"chi"		"添加一个点"
 	}
 
+	"Menu - Item - Add a FloorPoint"
+	{
+		"en"		"Add a Point(floor)"
+		"de"		"Punkt hinzufügen"
+		"pl"		"Dodaj punkt"
+		"fr"		"Ajouter un point"
+		"chi"		"添加一个点(脚下位置)"
+	}
+
 	"Menu - Item - Edit a Point"
 	{
 		"en"		"Edit a Point"
