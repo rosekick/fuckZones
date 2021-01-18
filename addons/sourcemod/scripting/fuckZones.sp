@@ -5574,7 +5574,7 @@ void AddZoneMenuItems(int client, Menu menu, bool create, int type, int pointsLe
 			AddItemFormat(menu, "startpoint_a_no_z", fuckZones_IsPositionNull(start) ? ITEMDRAW_DISABLED : ITEMDRAW_DEFAULT, "%T", "Menu - Item - Set Starting Point (Ignore Z/Height)", client);
 			AddItemFormat(menu, "startpoint_a_precision", fuckZones_IsPositionNull(start) ? ITEMDRAW_DISABLED : ITEMDRAW_DEFAULT, "%T", "Menu - Item - Edit Starting Point (Precision)", client);
 			AddItemFormat(menu, "startpoint_b", _, "%T", "Menu - Item - Set Ending Point", client);
-			AddItemFormat(menu, "startpoint_b_no_z", fuckZones_IsPositionNull(end) ? ITEMDRAW_DISABLED : ITEMDRAW_DEFAULT, "%T", "Menu - Item - Set Ending Point (Ignore Z/Height)", client);			
+			AddItemFormat(menu, "startpoint_b_no_z", fuckZones_IsPositionNull(end) ? ITEMDRAW_DISABLED : ITEMDRAW_DEFAULT, "%T", "Menu - Item - Set Ending Point (Ignore Z/Height)", client);		
 			AddItemFormat(menu, "startpoint_b_precision", fuckZones_IsPositionNull(end) ? ITEMDRAW_DISABLED : ITEMDRAW_DEFAULT, "%T", "Menu - Item - Edit Ending Point (Precision)", client);
 			AddItemFormat(menu, "set_teleport", (fuckZones_IsPositionNull(start) || fuckZones_IsPositionNull(end)) ? ITEMDRAW_DISABLED : ITEMDRAW_DEFAULT, "%T", "Menu - Item - Set Teleport Point", client);
 		}
