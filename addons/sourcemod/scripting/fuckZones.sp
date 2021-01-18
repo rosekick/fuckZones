@@ -34,7 +34,6 @@ ConVar g_cPrecisionValue = null;
 ConVar g_cRegenerateSpam = null;
 ConVar g_cDefaultHeight = null;
 ConVar g_cDefaultRadius = null;
-ConVar g_cDefaultZOffset = null;
 ConVar g_cDefaultColor = null;
 ConVar g_cDefaultDisplay = null;
 ConVar g_cEnableLogging = null;
@@ -164,7 +163,6 @@ public void OnPluginStart()
 	g_cRegenerateSpam = AutoExecConfig_CreateConVar("fuckZones_regenerate_spam", "10", "Amount of time before zones can be regenerated again (spam protection) (0 to disable this feature, Default: 10)", _, true, 0.0);
 	g_cDefaultHeight = AutoExecConfig_CreateConVar("fuckZones_default_height", "256", "Default height (z-axis) for circles and polygons zones (Default: 256)");
 	g_cDefaultRadius = AutoExecConfig_CreateConVar("fuckZones_default_radius", "150", "Default radius for circle zones (Default: 150)");
-	g_cDefaultZOffset = AutoExecConfig_CreateConVar("fuckZones_default_z_offset", "5", "Adds a offset to the z-axis for all points. (Default: 5)");
 	g_cDefaultColor = AutoExecConfig_CreateConVar("fuckZones_default_color", "Pink", "Default zone color (Default: Pink)");
 	g_cDefaultDisplay = AutoExecConfig_CreateConVar("fuckZones_default_display", "1", "Default zone display (0 - Full, 1 - Bottom (Default), 2 - Hide)", _, true, 0.0, true, 2.0);
 	g_cEnableLogging = AutoExecConfig_CreateConVar("fuckZones_enable_logging", "1", "Enable logging? (Default: 1)", _, true, 0.0, true, 1.0);
@@ -656,11 +654,9 @@ public Action OnPlayerRunCmd(int client, int &buttons, int &impulse, float vel[3
 
 			float fPoint[3];
 			GetClientLookPoint(client, fPoint);
-			fPoint[2] += g_cDefaultZOffset.FloatValue;
 
 			float vPlayerOrigin[3];
 			GetClientAbsOrigin(client, vPlayerOrigin);
-			vPlayerOrigin[2] += g_cDefaultZOffset.FloatValue;
 
 			switch (CZone[client].Type)
 			{
@@ -1383,7 +1379,6 @@ public int MenuHandler_ZonePropertiesMenu(Menu menu, MenuAction action, int para
 			{
 				float vecLook[3];
 				GetClientLookPoint(param1, vecLook);
-				vecLook[2] += g_cDefaultZOffset.FloatValue;
 
 				UpdateZonesConfigKeyVector(entity, "start", vecLook);
 
@@ -1395,7 +1390,6 @@ public int MenuHandler_ZonePropertiesMenu(Menu menu, MenuAction action, int para
 			{
 				float vecLook[3];
 				GetClientLookPoint(param1, vecLook);
-				vecLook[2] += g_cDefaultZOffset.FloatValue;
 
 				UpdateZonesConfigKeyVector(entity, "end", vecLook);
 
@@ -1501,7 +1495,6 @@ public int MenuHandler_ZonePropertiesMenu(Menu menu, MenuAction action, int para
 			{
 				float vLookPoint[3];
 				GetClientLookPoint(param1, vLookPoint);
-				vLookPoint[2] += g_cDefaultZOffset.FloatValue;
 
 				Zone[entity].PointsData.PushArray(vLookPoint, 3);
 
@@ -1513,7 +1506,6 @@ public int MenuHandler_ZonePropertiesMenu(Menu menu, MenuAction action, int para
 			{
 				float vPlayerOrigin[3];
 				GetClientAbsOrigin(param1, vPlayerOrigin);
-				vPlayerOrigin[2] += g_cDefaultZOffset.FloatValue;
 
 				Zone[entity].PointsData.PushArray(vPlayerOrigin, 3);
 
@@ -2403,7 +2395,6 @@ public int MenuHandler_CreateZonesMenu(Menu menu, MenuAction action, int param1,
 			{
 				float vLookPoint[3];
 				GetClientLookPoint(param1, vLookPoint);
-				vLookPoint[2] += g_cDefaultZOffset.FloatValue;
 				Array_Copy(vLookPoint, CZone[param1].Start, 3);
 				// CPrintToChat(param1, "Starting point: %.2f/%.2f/%.2f", CZone[param1].Start[0], CZone[param1].Start[1], CZone[param1].Start[2]);
 
@@ -2413,7 +2404,6 @@ public int MenuHandler_CreateZonesMenu(Menu menu, MenuAction action, int param1,
 			{
 				float vLookPoint[3];
 				GetClientLookPoint(param1, vLookPoint);
-				vLookPoint[2] += g_cDefaultZOffset.FloatValue;
 				Array_Copy(vLookPoint, CZone[param1].End, 3);
 				// CPrintToChat(param1, "Ending point: %.2f/%.2f/%.2f", CZone[param1].End[0], CZone[param1].End[1], CZone[param1].End[2]);
 
@@ -2477,7 +2467,6 @@ public int MenuHandler_CreateZonesMenu(Menu menu, MenuAction action, int param1,
 			{
 				float vLookPoint[3];
 				GetClientLookPoint(param1, vLookPoint);
-				vLookPoint[2] += g_cDefaultZOffset.FloatValue;
 
 				CZone[param1].PointsData.PushArray(vLookPoint, 3);
 
@@ -2488,7 +2477,6 @@ public int MenuHandler_CreateZonesMenu(Menu menu, MenuAction action, int param1,
 			{
 				float vPlayerOrigin[3];
 				GetClientAbsOrigin(param1, vPlayerOrigin);
-				vPlayerOrigin[2] += g_cDefaultZOffset.FloatValue;
 
 				CZone[param1].PointsData.PushArray(vPlayerOrigin, 3);
 
